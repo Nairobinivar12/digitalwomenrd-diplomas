@@ -18,6 +18,8 @@ Stack: React + Vite + TypeScript, Supabase (base de datos y login) y jsPDF (el d
 
 Para agregar otra administradora: crea su usuario en el paso 3 y agrega su correo en la tabla `administradores` (Table Editor).
 
+**Roles:** ejecuta también [`supabase/roles.sql`](supabase/roles.sql). `superadmin` puede todo (incluido eliminar participantes y gestionar administradoras); `editor` registra, edita e importa, pero no elimina.
+
 ## 2. Correr en local
 
 ```bash

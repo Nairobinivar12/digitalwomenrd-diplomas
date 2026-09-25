@@ -58,6 +58,7 @@ const VACIO = { nombre: '', correo: '', taller: '', fecha: '' }
 
 function Panel({ correo }: { correo: string }) {
   const [esAdmin, setEsAdmin] = useState<boolean | null>(null)
+  const [esSuper, setEsSuper] = useState(false)
   const [participantes, setParticipantes] = useState<Participante[]>([])
   const [form, setForm] = useState(VACIO)
   const [editando, setEditando] = useState<string | null>(null)
@@ -82,6 +83,7 @@ function Panel({ correo }: { correo: string }) {
       setEsAdmin(Boolean(data))
       if (data) cargar()
     })
+    supabase.rpc('es_superadmin').then(({ data }) => setEsSuper(Boolean(data)))
   }, [])
 
   const talleres = useMemo(() => [...new Set(participantes.map((p) => p.taller))].sort(), [participantes])
@@ -176,7 +178,7 @@ function Panel({ correo }: { correo: string }) {
           <h1>Administración de diplomas</h1>
         </div>
         <div>
-          <span className="sub">{correo}</span>{' '}
+          <span className="sub">{correo} · {esSuper ? 'superadmin' : 'editora'}</span>{' '}
           <button className="secundario" onClick={() => supabase.auth.signOut()}>Salir</button>
         </div>
       </header>
@@ -265,7 +267,7 @@ function Panel({ correo }: { correo: string }) {
                   <td className="acciones">
                     <button className="enlace" onClick={() => import('../lib/diploma').then((m) => m.descargarDiploma(p))}>Ver diploma</button>
                     <button className="enlace" onClick={() => editar(p)}>Editar</button>
-                    <button className="enlace peligro" onClick={() => eliminar(p)}>Eliminar</button>
+                    {esSuper && <button className="enlace peligro" onClick={() => eliminar(p)}>Eliminar</button>}
                   </td>
                 </tr>
               ))}

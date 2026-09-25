@@ -7,16 +7,23 @@ const PRIMARIO: [number, number, number] = [107, 44, 145]
 const ACENTO: [number, number, number] = [214, 51, 132]
 const TEXTO: [number, number, number] = [45, 45, 55]
 
+// Quiénes firman el diploma. La firma se dibuja con una fuente manuscrita;
+// si existe la imagen indicada (firma escaneada, fondo transparente) se usa esa imagen.
+const FIRMANTES = [
+  { nombre: 'Nairobi Nivar', cargo: 'Cofundadora, DigitalWomenRD', imagen: '/firma-nairobi.png' },
+  { nombre: 'Idalis Ramirez', cargo: 'Cofundadora, DigitalWomenRD', imagen: '/firma-idalis.png' },
+]
+
 interface Imagen {
   data: string
   ancho: number
   alto: number
 }
 
-let logoCache: Promise<Imagen | null> | null = null
+const imagenes = new Map<string, Promise<Imagen | null>>()
 
-function cargarLogo(): Promise<Imagen | null> {
-  logoCache ??= new Promise((resolve) => {
+function cargarImagen(src: string): Promise<Imagen | null> {
+  if (!imagenes.has(src)) imagenes.set(src, new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
       const canvas = document.createElement('canvas')
@@ -26,9 +33,25 @@ function cargarLogo(): Promise<Imagen | null> {
       resolve({ data: canvas.toDataURL('image/png'), ancho: img.naturalWidth, alto: img.naturalHeight })
     }
     img.onerror = () => resolve(null)
-    img.src = '/logo.png'
-  })
-  return logoCache
+    img.src = src
+  }))
+  return imagenes.get(src)!
+}
+
+let fuenteFirma: Promise<string | null> | null = null
+
+// Devuelve la fuente manuscrita en base64, como la pide jsPDF.
+function cargarFuenteFirma(): Promise<string | null> {
+  fuenteFirma ??= fetch('/fonts/GreatVibes-Regular.ttf')
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))
+    .then((buf) => {
+      let bin = ''
+      const bytes = new Uint8Array(buf)
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+      return btoa(bin)
+    })
+    .catch(() => null)
+  return fuenteFirma
 }
 
 export async function descargarDiploma(d: Diploma) {
@@ -47,7 +70,7 @@ export async function descargarDiploma(d: Diploma) {
 
   // Logo (máx. 60 x 32 mm, manteniendo proporción)
   let y = 24
-  const logo = await cargarLogo()
+  const logo = await cargarImagen('/logo.png')
   if (logo) {
     const escala = Math.min(60 / logo.ancho, 32 / logo.alto)
     const w = logo.ancho * escala
@@ -94,22 +117,51 @@ export async function descargarDiploma(d: Diploma) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(...PRIMARIO)
-  const taller = doc.splitTextToSize(`«${d.taller}»`, W - 70)
+  const taller = doc.splitTextToSize(d.taller, W - 70)
   doc.text(taller, cx, y, { align: 'center' })
 
   y += 8 * taller.length + 3
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(13)
   doc.setTextColor(...TEXTO)
-  doc.text(`realizado el ${fechaLarga(d.fecha)}.`, cx, y, { align: 'center' })
+  // Mes con mayúscula inicial: "25 de Septiembre de 2026".
+  const fecha = fechaLarga(d.fecha).replace(/ de (\p{L})/u, (_, l: string) => ` de ${l.toUpperCase()}`)
+  doc.text(`Realizado el ${fecha}.`, cx, y, { align: 'center' })
 
   // Firma
-  const yf = H - 30
-  doc.setDrawColor(...TEXTO)
-  doc.setLineWidth(0.3)
-  doc.line(cx - 40, yf, cx + 40, yf)
-  doc.setFontSize(11)
-  doc.text('DigitalWomenRD', cx, yf + 6, { align: 'center' })
+  // Firmas, repartidas a lo ancho
+  const yf = H - 32
+  const fuente = await cargarFuenteFirma()
+  if (fuente) {
+    doc.addFileToVFS('GreatVibes-Regular.ttf', fuente)
+    doc.addFont('GreatVibes-Regular.ttf', 'GreatVibes', 'normal')
+  }
+  const separacion = 130
+  for (const [i, f] of FIRMANTES.entries()) {
+    const x = cx + (i - (FIRMANTES.length - 1) / 2) * separacion
+    const firma = await cargarImagen(f.imagen)
+    if (firma) {
+      const escala = Math.min(60 / firma.ancho, 18 / firma.alto)
+      const w = firma.ancho * escala
+      const h = firma.alto * escala
+      doc.addImage(firma.data, 'PNG', x - w / 2, yf - h + 2, w, h)
+    } else if (fuente) {
+      doc.setFont('GreatVibes', 'normal')
+      doc.setFontSize(34)
+      doc.setTextColor(30, 40, 90) // azul tinta
+      doc.text(f.nombre, x, yf - 2, { align: 'center' })
+    }
+    doc.setDrawColor(...TEXTO)
+    doc.setLineWidth(0.3)
+    doc.line(x - 40, yf, x + 40, yf)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(...TEXTO)
+    doc.text(f.nombre, x, yf + 5, { align: 'center' })
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.text(f.cargo, x, yf + 10, { align: 'center' })
+  }
 
   doc.setFontSize(8)
   doc.setTextColor(150, 150, 150)
