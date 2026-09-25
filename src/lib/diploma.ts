@@ -118,7 +118,7 @@ export async function descargarDiploma(d: Diploma) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(14)
   doc.setTextColor(...TEXTO)
-  doc.text('por su participación en el taller', cx, y, { align: 'center' })
+  doc.text('Por su Participación en el Taller', cx, y, { align: 'center' })
 
   y += 11
   doc.setFont('helvetica', 'bold')
