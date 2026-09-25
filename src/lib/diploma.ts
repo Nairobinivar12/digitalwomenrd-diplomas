@@ -18,7 +18,7 @@ interface Firmante {
 // La mentora o el mentor de cada taller se agrega desde el panel.
 const FIRMANTES: Firmante[] = [
   { nombre: 'Nairobi Nivar', cargo: 'Cofundadora, DigitalWomenRD', imagen: '/firma-nairobi.png' },
-  { nombre: 'Idalis Ramirez', cargo: 'Cofundadora, DigitalWomenRD', imagen: '/firma-idalis.png' },
+  { nombre: 'Idalys Ramirez', cargo: 'Cofundadora, DigitalWomenRD', imagen: '/firma-idalis.png' },
 ]
 
 interface Imagen {
