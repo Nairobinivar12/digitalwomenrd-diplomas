@@ -18,7 +18,9 @@ Stack: React + Vite + TypeScript, Supabase (base de datos y login) y jsPDF (el d
 
 Para agregar otra administradora: crea su usuario en el paso 3 y agrega su correo en la tabla `administradores` (Table Editor).
 
-**Roles:** ejecuta también [`supabase/roles.sql`](supabase/roles.sql). `superadmin` puede todo (incluido eliminar participantes y gestionar administradoras); `editor` registra, edita e importa, pero no elimina.
+**Roles:** ejecuta también [`supabase/roles.sql`](supabase/roles.sql).
+
+**Mentoras y mentores:** ejecuta también [`supabase/mentores.sql`](supabase/mentores.sql). En el panel se escribe la mentora o el mentor junto al taller y la fecha, y firma como tercera persona en todos los diplomas de ese taller. `superadmin` puede todo (incluido eliminar participantes y gestionar administradoras); `editor` registra, edita e importa, pero no elimina.
 
 ## 2. Correr en local
 

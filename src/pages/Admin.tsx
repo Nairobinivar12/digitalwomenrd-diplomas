@@ -1,6 +1,13 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase, normalizarCorreo, type Participante } from '../lib/supabase'
+import {
+  supabase,
+  normalizarCorreo,
+  claveTaller,
+  type MentorTaller,
+  type Participante,
+  type TituloMentor,
+} from '../lib/supabase'
 import { fechaLarga } from '../lib/fechas'
 import { parsearCsv } from '../lib/csv'
 
@@ -67,15 +74,50 @@ function Panel({ correo }: { correo: string }) {
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [csv, setCsv] = useState('')
   const [erroresCsv, setErroresCsv] = useState<string[]>([])
+  const [mentores, setMentores] = useState<Map<string, MentorTaller>>(new Map())
+  const [mentor, setMentor] = useState<{ nombre: string; titulo: TituloMentor }>({ nombre: '', titulo: 'Mentora' })
+  const mentorAutocompletado = useRef('')
 
   async function cargar() {
-    const { data, error } = await supabase
-      .from('participantes')
-      .select('id, nombre, correo, taller, fecha')
-      .order('fecha', { ascending: false })
-      .order('nombre')
+    const [{ data, error }, { data: ms }] = await Promise.all([
+      supabase
+        .from('participantes')
+        .select('id, nombre, correo, taller, fecha')
+        .order('fecha', { ascending: false })
+        .order('nombre'),
+      supabase.from('mentores_taller').select('taller, fecha, nombre, titulo'),
+    ])
     if (error) setMensaje({ tipo: 'error', texto: error.message })
     else setParticipantes(data)
+    setMentores(new Map((ms ?? []).map((m: MentorTaller) => [claveTaller(m.taller, m.fecha), m])))
+  }
+
+  // Al escribir un taller y fecha que ya tienen mentora/mentor, se completa solo.
+  // Si se cambia a otro taller sin mentor, se borra lo que se había completado solo.
+  function cambiarTaller(taller: string, fecha: string) {
+    setForm((f) => ({ ...f, taller, fecha }))
+    const m = mentores.get(claveTaller(taller.trim(), fecha))
+    if (m) {
+      mentorAutocompletado.current = m.nombre
+      setMentor({ nombre: m.nombre, titulo: m.titulo })
+    } else if (mentorAutocompletado.current) {
+      setMentor((actual) => (actual.nombre === mentorAutocompletado.current ? { ...actual, nombre: '' } : actual))
+      mentorAutocompletado.current = ''
+    }
+  }
+
+  // Guarda la mentora/mentor para cada taller y fecha indicados (si se escribió un nombre).
+  async function guardarMentor(talleres: { taller: string; fecha: string }[]) {
+    const nombre = mentor.nombre.trim()
+    if (!nombre) return true
+    const filas = [...new Map(talleres.map((t) => [claveTaller(t.taller, t.fecha), t])).values()].map((t) => ({
+      ...t,
+      nombre,
+      titulo: mentor.titulo,
+    }))
+    const { error } = await supabase.from('mentores_taller').upsert(filas, { onConflict: 'taller,fecha' })
+    if (error) setMensaje({ tipo: 'error', texto: `No se pudo guardar la mentora o el mentor: ${error.message}` })
+    return !error
   }
 
   useEffect(() => {
@@ -111,6 +153,7 @@ function Panel({ correo }: { correo: string }) {
       return
     }
     setMensaje({ tipo: 'ok', texto: editando ? 'Cambios guardados.' : `${fila.nombre} registrada.` })
+    await guardarMentor([fila])
     // Se conservan taller y fecha para registrar a varias personas del mismo taller seguidas.
     setForm({ ...VACIO, taller: fila.taller, fecha: fila.fecha })
     setEditando(null)
@@ -120,6 +163,7 @@ function Panel({ correo }: { correo: string }) {
   function editar(p: Participante) {
     setEditando(p.id)
     setForm({ nombre: p.nombre, correo: p.correo, taller: p.taller, fecha: p.fecha })
+    cambiarTaller(p.taller, p.fecha)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -150,6 +194,7 @@ function Panel({ correo }: { correo: string }) {
       tipo: 'ok',
       texto: `Importadas ${nuevas} personas${filas.length > nuevas ? ` (${filas.length - nuevas} ya existían)` : ''}.`,
     })
+    await guardarMentor(filas)
     if (errores.length === 0) setCsv('')
     cargar()
   }
@@ -197,12 +242,30 @@ function Panel({ correo }: { correo: string }) {
           <label htmlFor="correo">Correo</label>
           <input id="correo" type="email" required value={form.correo} onChange={(e) => setForm({ ...form, correo: e.target.value })} />
           <label htmlFor="taller">Taller</label>
-          <input id="taller" required list="talleres" value={form.taller} onChange={(e) => setForm({ ...form, taller: e.target.value })} />
+          <input id="taller" required list="talleres" value={form.taller} onChange={(e) => cambiarTaller(e.target.value, form.fecha)} />
           <datalist id="talleres">
             {talleres.map((t) => <option key={t} value={t} />)}
           </datalist>
           <label htmlFor="fecha">Fecha del taller</label>
-          <input id="fecha" type="date" required value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} />
+          <input id="fecha" type="date" required value={form.fecha} onChange={(e) => cambiarTaller(form.taller, e.target.value)} />
+          <label htmlFor="mentor">Mentora o mentor del taller (opcional)</label>
+          <div className="fila">
+            <select
+              aria-label="Título"
+              value={mentor.titulo}
+              onChange={(e) => setMentor({ ...mentor, titulo: e.target.value as TituloMentor })}
+            >
+              <option>Mentora</option>
+              <option>Mentor</option>
+            </select>
+            <input
+              id="mentor"
+              placeholder="Nombre y apellido"
+              value={mentor.nombre}
+              onChange={(e) => setMentor({ ...mentor, nombre: e.target.value })}
+            />
+          </div>
+          <p className="sub">Firma el diploma junto a las cofundadoras. Aplica a todo el taller de esa fecha.</p>
           <div className="fila">
             <button type="submit">{editando ? 'Guardar cambios' : 'Registrar'}</button>
             {editando && (
@@ -267,7 +330,12 @@ function Panel({ correo }: { correo: string }) {
                   <td>{p.taller}</td>
                   <td>{fechaLarga(p.fecha)}</td>
                   <td className="acciones">
-                    <button className="enlace" onClick={() => import('../lib/diploma').then((m) => m.descargarDiploma(p))}>Ver diploma</button>
+                    <button className="enlace" onClick={() => {
+                        const m = mentores.get(claveTaller(p.taller, p.fecha))
+                        import('../lib/diploma').then((d) =>
+                          d.descargarDiploma({ ...p, mentor: m?.nombre, mentor_titulo: m?.titulo }),
+                        )
+                      }}>Ver diploma</button>
                     <button className="enlace" onClick={() => editar(p)}>Editar</button>
                     {esSuper && <button className="enlace peligro" onClick={() => eliminar(p)}>Eliminar</button>}
                   </td>

@@ -16,7 +16,21 @@ export interface Participante {
   fecha: string // YYYY-MM-DD
 }
 
-export type Diploma = Pick<Participante, 'id' | 'nombre' | 'taller' | 'fecha'>
+export type TituloMentor = 'Mentora' | 'Mentor'
+
+export interface MentorTaller {
+  taller: string
+  fecha: string
+  nombre: string
+  titulo: TituloMentor
+}
+
+export type Diploma = Pick<Participante, 'id' | 'nombre' | 'taller' | 'fecha'> & {
+  mentor?: string | null
+  mentor_titulo?: TituloMentor | null
+}
+
+export const claveTaller = (taller: string, fecha: string) => `${taller}|${fecha}`
 
 export function normalizarCorreo(correo: string) {
   return correo.trim().toLowerCase()

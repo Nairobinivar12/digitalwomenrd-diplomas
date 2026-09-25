@@ -7,9 +7,16 @@ const PRIMARIO: [number, number, number] = [107, 44, 145]
 const ACENTO: [number, number, number] = [214, 51, 132]
 const TEXTO: [number, number, number] = [45, 45, 55]
 
-// Quiénes firman el diploma. La firma se dibuja con una fuente manuscrita;
+interface Firmante {
+  nombre: string
+  cargo: string
+  imagen?: string
+}
+
+// Quiénes firman todos los diplomas. La firma se dibuja con una fuente manuscrita;
 // si existe la imagen indicada (firma escaneada, fondo transparente) se usa esa imagen.
-const FIRMANTES = [
+// La mentora o el mentor de cada taller se agrega desde el panel.
+const FIRMANTES: Firmante[] = [
   { nombre: 'Nairobi Nivar', cargo: 'Cofundadora, DigitalWomenRD', imagen: '/firma-nairobi.png' },
   { nombre: 'Idalis Ramirez', cargo: 'Cofundadora, DigitalWomenRD', imagen: '/firma-idalis.png' },
 ]
@@ -128,18 +135,22 @@ export async function descargarDiploma(d: Diploma) {
   const fecha = fechaLarga(d.fecha).replace(/ de (\p{L})/u, (_, l: string) => ` de ${l.toUpperCase()}`)
   doc.text(`Realizado el ${fecha}.`, cx, y, { align: 'center' })
 
-  // Firma
-  // Firmas, repartidas a lo ancho
+  // Firmas, repartidas a lo ancho. Si el taller tiene mentora o mentor, va como tercera firma.
+  const firmantes: Firmante[] = d.mentor
+    ? [...FIRMANTES, { nombre: d.mentor, cargo: `${d.mentor_titulo ?? 'Mentora'} del taller` }]
+    : FIRMANTES
+  const tres = firmantes.length > 2
+  const separacion = tres ? 88 : 130
+  const mitadLinea = tres ? 36 : 40
   const yf = H - 32
   const fuente = await cargarFuenteFirma()
   if (fuente) {
     doc.addFileToVFS('GreatVibes-Regular.ttf', fuente)
     doc.addFont('GreatVibes-Regular.ttf', 'GreatVibes', 'normal')
   }
-  const separacion = 130
-  for (const [i, f] of FIRMANTES.entries()) {
-    const x = cx + (i - (FIRMANTES.length - 1) / 2) * separacion
-    const firma = await cargarImagen(f.imagen)
+  for (const [i, f] of firmantes.entries()) {
+    const x = cx + (i - (firmantes.length - 1) / 2) * separacion
+    const firma = f.imagen ? await cargarImagen(f.imagen) : null
     if (firma) {
       const escala = Math.min(60 / firma.ancho, 18 / firma.alto)
       const w = firma.ancho * escala
@@ -147,13 +158,13 @@ export async function descargarDiploma(d: Diploma) {
       doc.addImage(firma.data, 'PNG', x - w / 2, yf - h + 2, w, h)
     } else if (fuente) {
       doc.setFont('GreatVibes', 'normal')
-      doc.setFontSize(34)
+      doc.setFontSize(tres ? 30 : 34)
       doc.setTextColor(30, 40, 90) // azul tinta
       doc.text(f.nombre, x, yf - 2, { align: 'center' })
     }
     doc.setDrawColor(...TEXTO)
     doc.setLineWidth(0.3)
-    doc.line(x - 40, yf, x + 40, yf)
+    doc.line(x - mitadLinea, yf, x + mitadLinea, yf)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(11)
     doc.setTextColor(...TEXTO)
@@ -165,7 +176,7 @@ export async function descargarDiploma(d: Diploma) {
 
   doc.setFontSize(8)
   doc.setTextColor(150, 150, 150)
-  doc.text(`Código de verificación: ${d.id}`, W - 18, H - 17, { align: 'right' })
+  doc.text(`Código de verificación: ${d.id}`, W - 18, H - 16, { align: 'right' })
 
   const archivo = `Diploma - ${d.taller} - ${d.nombre}`.replace(/[\\/:*?"<>|]/g, '')
   doc.save(`${archivo}.pdf`)
