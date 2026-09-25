@@ -216,8 +216,9 @@ function Panel({ correo }: { correo: string }) {
         <div className="tarjeta">
           <h2>Importar lista (CSV)</h2>
           <p className="sub">
-            Columnas: <code>nombre, correo, taller, fecha</code>. Si la lista no tiene taller o fecha, se usan los del
-            formulario de la izquierda. En Excel: <em>Guardar como → CSV</em>.
+            Columnas: <code>nombre, correo, taller, fecha</code>, en cualquier orden si la primera fila tiene los
+            títulos. Si la lista no tiene taller o fecha, se usan los del formulario de la izquierda. En Excel:{' '}
+            <em>Guardar como → CSV</em>. En Google Forms: <em>Respuestas → Hojas de cálculo → Archivo → Descargar → CSV</em>.
           </p>
           <input type="file" accept=".csv,text/csv" onChange={(e) => leerArchivo(e.target.files?.[0])} />
           <textarea

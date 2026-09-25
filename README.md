@@ -40,6 +40,8 @@ Guarda la hoja como **CSV** con las columnas `nombre, correo, taller, fecha` (fe
 Si todas las personas son del mismo taller, puedes dejar solo `nombre, correo` y escribir el taller y la fecha en el formulario antes de importar.
 Los registros repetidos (mismo correo, taller y fecha) se ignoran.
 
+Si la primera fila tiene títulos, las columnas se reconocen por su nombre y en cualquier orden, así que el CSV de **Google Forms** se sube tal cual (*Respuestas → Vincular a Hojas de cálculo → Archivo → Descargar → CSV*). Se ignoran columnas como "Marca temporal", y si hay "Nombre" y "Apellido" por separado se unen.
+
 ## Logo y diseño del diploma
 
 - El logo va en `public/logo.png` (se usa en la web y en el diploma).
