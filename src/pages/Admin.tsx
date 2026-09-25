@@ -282,7 +282,12 @@ function Panel({ correo }: { correo: string }) {
               Guardar
             </button>
           </div>
-          <p className="sub">Firma el diploma junto a las cofundadoras. Aplica a todo el taller de esa fecha.</p>
+          <p className="sub">
+            Firma el diploma junto a las cofundadoras. Aplica a todo el taller de esa fecha.
+            {mentor.nombre.trim() && (!form.taller.trim() || !form.fecha) && (
+              <strong> Para guardarla, llena también el taller y la fecha de arriba.</strong>
+            )}
+          </p>
           <div className="fila">
             <button type="submit">{editando ? 'Guardar cambios' : 'Registrar'}</button>
             {editando && (
