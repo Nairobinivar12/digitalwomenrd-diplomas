@@ -92,7 +92,7 @@ ul.error { padding-left: 28px; }
 .barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .barra-marca { display: flex; align-items: center; gap: 12px; }
 .barra-marca h1 { margin: 0; }
-.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
 .rejilla .tarjeta { margin-bottom: 0; }
 .rejilla + .tarjeta { margin-top: 16px; }
 
