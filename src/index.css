@@ -1,0 +1,103 @@
+:root {
+  --primario: #6b2c91;
+  --primario-hover: #57237a;
+  --acento: #d63384;
+  --texto: #2d2d37;
+  --suave: #6b6b78;
+  --fondo: #f7f3fa;
+  --tarjeta: #ffffff;
+  --borde: #e4dcea;
+  --error: #b42318;
+  --error-fondo: #fdecea;
+  --exito: #067647;
+  --exito-fondo: #e7f6ee;
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--texto);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --primario: #b37ad6;
+    --primario-hover: #c592e3;
+    --acento: #f06aa8;
+    --texto: #ece8f0;
+    --suave: #a9a3b3;
+    --fondo: #17131b;
+    --tarjeta: #221c28;
+    --borde: #3a3142;
+    --error: #ff8a80;
+    --error-fondo: #3b1a1a;
+    --exito: #7ad9a6;
+    --exito-fondo: #173226;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); color: var(--texto); line-height: 1.5; }
+h1, h2 { margin: 0 0 .5rem; line-height: 1.2; }
+h1 { font-size: 1.6rem; color: var(--primario); }
+h2 { font-size: 1.15rem; }
+code { font-size: .9em; }
+
+.contenedor { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+.contenedor.estrecho { max-width: 560px; }
+
+.marca { text-align: center; margin: 24px 0; }
+.logo { max-width: 220px; max-height: 120px; margin-bottom: 12px; }
+.logo-mini { height: 36px; }
+.sub { color: var(--suave); font-size: .92rem; }
+
+.tarjeta {
+  background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px;
+  padding: 20px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px;
+}
+.aviso { text-align: center; display: block; }
+
+label { font-weight: 600; font-size: .9rem; margin-top: 4px; }
+input, select, textarea {
+  font: inherit; color: inherit; background: var(--fondo); border: 1px solid var(--borde);
+  border-radius: 8px; padding: 10px 12px; width: 100%; min-width: 0;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--primario); outline-offset: 1px; }
+input[type='file'] { background: none; border: none; padding: 0; }
+
+button {
+  font: inherit; font-weight: 600; cursor: pointer; border: none; border-radius: 8px;
+  padding: 10px 16px; background: var(--primario); color: #fff; white-space: nowrap;
+}
+button:hover:not(:disabled) { background: var(--primario-hover); }
+button:disabled { opacity: .6; cursor: default; }
+button.secundario { background: transparent; color: var(--primario); border: 1px solid var(--primario); }
+button.secundario:hover:not(:disabled) { background: var(--fondo); }
+button.enlace { background: none; color: var(--primario); padding: 4px 6px; font-weight: 500; }
+button.enlace:hover:not(:disabled) { background: none; text-decoration: underline; }
+button.peligro { color: var(--error); }
+
+.fila { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fila > input, .fila > select { flex: 1 1 180px; }
+
+.error { color: var(--error); background: var(--error-fondo); padding: 10px 12px; border-radius: 8px; margin: 0 0 12px; }
+ul.error { padding-left: 28px; }
+.exito { color: var(--exito); background: var(--exito-fondo); padding: 10px 12px; border-radius: 8px; margin: 0 0 12px; }
+
+.lista-diplomas { list-style: none; margin: 0; padding: 0; }
+.lista-diplomas li {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 0; border-top: 1px solid var(--borde);
+}
+.lista-diplomas li div { display: flex; flex-direction: column; }
+
+.barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.barra-marca { display: flex; align-items: center; gap: 12px; }
+.barra-marca h1 { margin: 0; }
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.rejilla .tarjeta { margin-bottom: 0; }
+.rejilla + .tarjeta { margin-top: 16px; }
+
+.tabla-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--borde); vertical-align: top; }
+th { color: var(--suave); font-weight: 600; }
+td.acciones { white-space: nowrap; text-align: right; }
