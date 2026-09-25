@@ -101,7 +101,7 @@ export async function descargarDiploma(d: Diploma) {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(14)
   doc.setTextColor(...TEXTO)
-  doc.text('DigitalWomenRD otorga el Presente Certificado a', cx, y, { align: 'center' })
+  doc.text('DigitalWomenRD Otorga el Presente Certificado a', cx, y, { align: 'center' })
 
   y += 16
   doc.setFont('helvetica', 'bold')
