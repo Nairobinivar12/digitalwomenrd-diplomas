@@ -135,9 +135,9 @@ export async function descargarDiploma(d: Diploma) {
   const fecha = fechaLarga(d.fecha).replace(/ de (\p{L})/u, (_, l: string) => ` de ${l.toUpperCase()}`)
   doc.text(`Realizado el ${fecha}.`, cx, y, { align: 'center' })
 
-  // Firmas, repartidas a lo ancho. Si el taller tiene mentora o mentor, va como tercera firma.
+  // Firmas, repartidas a lo ancho. Si el taller tiene mentora o mentor, firma en el medio.
   const firmantes: Firmante[] = d.mentor
-    ? [...FIRMANTES, { nombre: d.mentor, cargo: `${d.mentor_titulo ?? 'Mentora'} del Taller` }]
+    ? [FIRMANTES[0], { nombre: d.mentor, cargo: `${d.mentor_titulo ?? 'Mentora'} del Taller` }, ...FIRMANTES.slice(1)]
     : FIRMANTES
   const tres = firmantes.length > 2
   const separacion = tres ? 88 : 130
