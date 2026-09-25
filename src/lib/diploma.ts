@@ -137,7 +137,7 @@ export async function descargarDiploma(d: Diploma) {
 
   // Firmas, repartidas a lo ancho. Si el taller tiene mentora o mentor, va como tercera firma.
   const firmantes: Firmante[] = d.mentor
-    ? [...FIRMANTES, { nombre: d.mentor, cargo: `${d.mentor_titulo ?? 'Mentora'} del taller` }]
+    ? [...FIRMANTES, { nombre: d.mentor, cargo: `${d.mentor_titulo ?? 'Mentora'} del Taller` }]
     : FIRMANTES
   const tres = firmantes.length > 2
   const separacion = tres ? 88 : 130
