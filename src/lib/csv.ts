@@ -74,11 +74,45 @@ function columnasPorTitulo(encabezado: string[]): Columnas {
 }
 
 const POR_POSICION: Columnas = { nombre: 0, apellido: -1, correo: 1, taller: 2, fecha: 3 }
+const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const FECHA_HORA = /^\d{1,4}[/-]\d{1,2}[/-]\d{1,4}/
+
+/**
+ * Sin fila de títulos. Si el correo no está en la segunda columna, se asume lo que sale al
+ * copiar las respuestas de Google Sheets: [marca temporal], nombre, [apellido], correo, ...
+ */
+function columnasPorContenido(campos: string[]): Columnas {
+  const correo = campos.findIndex((c) => CORREO.test(c))
+  if (correo <= 1) return POR_POSICION
+  const antes = campos.slice(0, correo).flatMap((c, i) => (c && !FECHA_HORA.test(c) ? [i] : []))
+  return { nombre: antes[0] ?? -1, apellido: antes[1] ?? -1, correo, taller: -1, fecha: -1 }
+}
+
+// Palabra por palabra: "leyda segura" → "Leyda Segura", "MENDEZ PEÑA" → "Mendez Peña".
+// Las palabras ya escritas con mayúscula inicial (p. ej. "D'oleo", "McDonald") se dejan igual,
+// y las partículas en minúscula ("de", "del"...) se respetan.
+const PARTICULAS = new Set(['de', 'del', 'la', 'las', 'los', 'y'])
+function capitalizar(nombre: string): string {
+  return nombre
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((p, i) => {
+      const todoMayus = p.length > 1 && p === p.toUpperCase() && p !== p.toLowerCase()
+      const minuscula = p.charAt(0) !== p.charAt(0).toUpperCase()
+      if (!todoMayus && !minuscula) return p
+      if (i > 0 && PARTICULAS.has(p)) return p
+      const base = p.toLowerCase()
+      return base.charAt(0).toUpperCase() + base.slice(1)
+    })
+    .join(' ')
+}
 
 /**
  * Columnas: nombre, correo, taller, fecha. Si hay fila de títulos, las columnas se
- * reconocen por su nombre y en cualquier orden; si no, se toman en ese orden.
- * El separador puede ser coma o punto y coma.
+ * reconocen por su nombre y en cualquier orden; si no, se toman en ese orden o se
+ * deducen del contenido (respuestas de Google Forms copiadas del Sheet).
+ * El separador puede ser coma, punto y coma o tabulación (al pegar desde Excel o Sheets).
  */
 export function parsearCsv(texto: string, tallerPorDefecto = '', fechaPorDefecto = ''): ResultadoImportacion {
   const lineas = texto.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim() !== '')
@@ -86,17 +120,19 @@ export function parsearCsv(texto: string, tallerPorDefecto = '', fechaPorDefecto
   const errores: string[] = []
   if (lineas.length === 0) return { filas, errores }
 
-  const sep = (lineas[0].match(/;/g)?.length ?? 0) > (lineas[0].match(/,/g)?.length ?? 0) ? ';' : ','
+  const cuenta = (c: string) => lineas[0].split(c).length - 1
+  const sep = cuenta('\t') > 0 ? '\t' : cuenta(';') > cuenta(',') ? ';' : ','
   // Fila de títulos: menciona el correo pero no trae ninguna dirección (sin "@").
   const conTitulos = /correo|e-?mail/i.test(lineas[0]) && !lineas[0].includes('@')
-  const col = conTitulos ? columnasPorTitulo(separarLinea(lineas[0], sep)) : POR_POSICION
+  const primera = separarLinea(lineas[0], sep)
+  const col = conTitulos ? columnasPorTitulo(primera) : columnasPorContenido(primera)
   if (col.nombre < 0) errores.push('No se encontró una columna de nombre')
   if (col.nombre < 0 || col.correo < 0) return { filas, errores }
 
   for (let i = conTitulos ? 1 : 0; i < lineas.length; i++) {
     const campos = separarLinea(lineas[i], sep)
     const valor = (c: number) => (c >= 0 ? campos[c] ?? '' : '')
-    const nombre = [valor(col.nombre), valor(col.apellido)].filter(Boolean).join(' ')
+    const nombre = capitalizar([valor(col.nombre), valor(col.apellido)].filter(Boolean).join(' '))
     const correo = valor(col.correo)
     const taller = valor(col.taller)
     const fecha = valor(col.fecha)
@@ -104,7 +140,7 @@ export function parsearCsv(texto: string, tallerPorDefecto = '', fechaPorDefecto
     const tallerFinal = taller || tallerPorDefecto
     const fechaFinal = normalizarFecha(fecha || fechaPorDefecto)
     if (!nombre) errores.push(`Línea ${n}: falta el nombre`)
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) errores.push(`Línea ${n}: correo inválido "${correo}"`)
+    else if (!CORREO.test(correo)) errores.push(`Línea ${n}: correo inválido "${correo}"`)
     else if (!tallerFinal) errores.push(`Línea ${n}: falta el taller`)
     else if (!fechaFinal) errores.push(`Línea ${n}: fecha inválida "${fecha}"`)
     else filas.push({ nombre, correo: normalizarCorreo(correo), taller: tallerFinal, fecha: fechaFinal })
