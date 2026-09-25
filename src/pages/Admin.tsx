@@ -120,6 +120,15 @@ function Panel({ correo }: { correo: string }) {
     return !error
   }
 
+  // Para poner o cambiar la mentora/mentor de un taller que ya tiene participantes registradas.
+  async function guardarSoloMentor() {
+    const taller = form.taller.trim()
+    if (await guardarMentor([{ taller, fecha: form.fecha }])) {
+      setMensaje({ tipo: 'ok', texto: `Listo: ${mentor.nombre.trim()} firma como ${mentor.titulo.toLowerCase()} de "${taller}".` })
+      cargar()
+    }
+  }
+
   useEffect(() => {
     supabase.rpc('es_admin').then(({ data }) => {
       setEsAdmin(Boolean(data))
@@ -264,6 +273,14 @@ function Panel({ correo }: { correo: string }) {
               value={mentor.nombre}
               onChange={(e) => setMentor({ ...mentor, nombre: e.target.value })}
             />
+            <button
+              type="button"
+              className="secundario"
+              disabled={!mentor.nombre.trim() || !form.taller.trim() || !form.fecha}
+              onClick={guardarSoloMentor}
+            >
+              Guardar
+            </button>
           </div>
           <p className="sub">Firma el diploma junto a las cofundadoras. Aplica a todo el taller de esa fecha.</p>
           <div className="fila">
